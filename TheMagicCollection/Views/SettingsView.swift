@@ -91,16 +91,17 @@ struct SettingsView: View {
             ) { result in
                 handleImport(result: result)
             }
-            .confirmationDialog("Export Options", isPresented: $showingExportSheet) {
-                Button("Export Collection") {
-                    exportCollection()
-                }
-                
-                Button("Export All Decks") {
-                    exportAllDecks()
-                }
-                
-                Button("Cancel", role: .cancel) { }
+            .sheet(isPresented: $showingExportSheet) {
+                ExportOptionsView(
+                    onExportCollection: {
+                        exportCollection()
+                        showingExportSheet = false
+                    },
+                    onExportAllDecks: {
+                        exportAllDecks()
+                        showingExportSheet = false
+                    }
+                )
             }
             .alert("Delete All Data", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -203,6 +204,67 @@ struct SettingsView: View {
         // }
         
         try? modelContext.save()
+    }
+}
+
+struct ExportOptionsView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    let onExportCollection: () -> Void
+    let onExportAllDecks: () -> Void
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        onExportCollection()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Export Collection", systemImage: "square.stack.3d.up")
+                                .font(.headline)
+                            
+                            Text("Export all cards in your collection to a CSV file")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    
+                    Button {
+                        onExportAllDecks()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Export All Decks", systemImage: "rectangle.stack")
+                                .font(.headline)
+                            
+                            Text("Export all your decks and lists to CSV files")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Choose Export Type")
+                } footer: {
+                    Text("Exported files will be saved to your device and can be shared.")
+                }
+            }
+            .navigationTitle("Export Options")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 400, minHeight: 300)
+        #endif
     }
 }
 
