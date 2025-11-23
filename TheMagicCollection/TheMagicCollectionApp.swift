@@ -1,8 +1,8 @@
 //
-//  TheMagicCollectionApp.swift
-//  TheMagicCollection
+//  MTGCollectionApp.swift
+//  MTGCollectionApp
 //
-//  Created by Adam Jolicoeur on 11/23/25.
+//  Created on 11/23/2025.
 //
 
 import SwiftUI
@@ -12,17 +12,21 @@ import SwiftData
 struct TheMagicCollectionApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Card.self,
+            CollectionEntry.self,
+            DeckList.self,
+            DeckEntry.self
         ])
+        
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -4,4 +4,70 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:AppModelsCard.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppModelsCollectionEntry.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppModelsDeckList.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppModelsDeckEntry.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppMTGCollectionApp.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsContentView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppServicesScryfallService.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppServicesCSVExportService.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsCollectionView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsCollectionEntryDetailView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsDecksListView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsDeckDetailView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsCardScannerView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsManualCardEntryView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:AppViewsSettingsView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:README.md">
+   </FileRef>
+   <FileRef
+      location = "group:ARCHITECTURE.md">
+   </FileRef>
+   <FileRef
+      location = "group:IMPLEMENTATION_CHECKLIST.md">
+   </FileRef>
+   <FileRef
+      location = "group:DATA_MODEL_DIAGRAM.md">
+   </FileRef>
+   <FileRef
+      location = "group:CODE_SNIPPETS.swift">
+   </FileRef>
+   <FileRef
+      location = "group:QUICK_START.md">
+   </FileRef>
+   <FileRef
+      location = "group:BUILD_FIXES_SUMMARY.md">
+   </FileRef>
 </Workspace>
