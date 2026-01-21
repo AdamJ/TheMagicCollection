@@ -13,7 +13,7 @@ struct SettingsView: View {
     @Query private var allCards: [Card]
     @Query private var collectionEntries: [CollectionEntry]
     @Query private var decks: [DeckList]
-    
+
     @State private var showingImportPicker = false
     @State private var showingExportSheet = false
     @State private var isImporting = false
@@ -21,7 +21,13 @@ struct SettingsView: View {
     @State private var showingDeleteAlert = false
     @State private var exportURL: URL?
     @State private var exportType: ExportType?
-    
+
+    // Error handling
+    @State private var errorMessage: String?
+    @State private var showError = false
+    @State private var showSuccess = false
+    @State private var successMessage: String?
+
     enum ExportType {
         case collection
         case allDecks
@@ -111,6 +117,16 @@ struct SettingsView: View {
             } message: {
                 Text("Are you sure you want to delete all your data? This action cannot be undone.")
             }
+            .alert("Error", isPresented: $showError) {
+                Button("OK") { }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred")
+            }
+            .alert("Success", isPresented: $showSuccess) {
+                Button("OK") { }
+            } message: {
+                Text(successMessage ?? "Operation completed successfully")
+            }
         }
     }
     
@@ -122,67 +138,78 @@ struct SettingsView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            
+
             isImporting = true
             importProgress = 0.0
-            
+
             Task {
                 let service = ScryfallService(modelContext: modelContext)
-                
+
                 do {
                     // Ensure we have access to the security-scoped resource
                     guard url.startAccessingSecurityScopedResource() else {
-                        print("Couldn't access file")
                         await MainActor.run {
                             isImporting = false
+                            errorMessage = "Unable to access the selected file. Please try again."
+                            showError = true
                         }
                         return
                     }
-                    
+
                     defer {
                         url.stopAccessingSecurityScopedResource()
                     }
-                    
+
                     try await service.loadBulkData(from: url)
-                    
+
                     await MainActor.run {
                         isImporting = false
                         importProgress = 1.0
+                        successMessage = "Successfully imported Scryfall database with \(allCards.count) cards."
+                        showSuccess = true
                     }
                 } catch {
-                    print("Import failed: \(error)")
                     await MainActor.run {
                         isImporting = false
+                        errorMessage = "Import failed: \(error.localizedDescription)"
+                        showError = true
                     }
                 }
             }
-            
+
         case .failure(let error):
-            print("File selection failed: \(error)")
+            errorMessage = "File selection failed: \(error.localizedDescription)"
+            showError = true
         }
     }
     
     private func exportCollection() {
         let service = CSVExportService(modelContext: modelContext)
-        
+
         do {
             let url = try service.exportCollection()
             exportURL = url
             exportType = .collection
+            successMessage = "Collection exported successfully. Use the share button to save or send the file."
+            showSuccess = true
         } catch {
-            print("Export failed: \(error)")
+            errorMessage = "Export failed: \(error.localizedDescription)"
+            showError = true
         }
     }
-    
+
     private func exportAllDecks() {
         let service = CSVExportService(modelContext: modelContext)
-        
+
         do {
             let url = try service.exportAllDecks()
             exportURL = url
             exportType = .allDecks
+            successMessage = "All decks exported successfully. Use the share button to save or send the file."
+            showSuccess = true
         } catch {
-            print("Export failed: \(error)")
+            errorMessage = "Export failed: \(error.localizedDescription)"
+            showError = true
         }
     }
     

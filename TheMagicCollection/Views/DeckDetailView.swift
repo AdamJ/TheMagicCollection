@@ -10,14 +10,18 @@ import SwiftData
 
 struct DeckDetailView: View {
     @Environment(\.modelContext) private var modelContext
-    
+
     @Bindable var deck: DeckList
-    
+
     @State private var showingAddCard = false
     @State private var showingExport = false
     @State private var exportURL: URL?
     @State private var selectedSection: DeckSection = .main
-    
+
+    // Error handling
+    @State private var errorMessage: String?
+    @State private var showError = false
+
     enum DeckSection: String, CaseIterable {
         case main = "Main Deck"
         case sideboard = "Sideboard"
@@ -101,6 +105,11 @@ struct DeckDetailView: View {
         .sheet(isPresented: $showingAddCard) {
             AddCardToDeckView(deck: deck, section: selectedSection)
         }
+        .alert("Export Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "Failed to export deck")
+        }
     }
     
     private var deckStatsView: some View {
@@ -110,18 +119,41 @@ struct DeckDetailView: View {
                 Label(deck.deckType.rawValue, systemImage: "tag")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                
+
                 Spacer()
-                
+
                 if deck.isValid {
                     Label("Valid", systemImage: "checkmark.circle.fill")
                         .font(.subheadline)
                         .foregroundStyle(.green)
                 } else {
-                    Label("Invalid", systemImage: "exclamationmark.triangle.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.orange)
+                    Menu {
+                        ForEach(deck.validationErrors) { error in
+                            Text(error.message)
+                        }
+                    } label: {
+                        Label("Invalid (\(deck.validationErrors.count))", systemImage: "exclamationmark.triangle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.orange)
+                    }
                 }
+            }
+
+            // Validation errors (if any)
+            if !deck.validationErrors.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(deck.validationErrors) { error in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                            Text(error.message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
             }
             
             // Card counts
@@ -186,12 +218,13 @@ struct DeckDetailView: View {
     
     private func exportDeck() {
         let exportService = CSVExportService(modelContext: modelContext)
-        
+
         do {
             let url = try exportService.exportDeck(deck)
             exportURL = url
         } catch {
-            print("Export failed: \(error)")
+            errorMessage = "Failed to export deck: \(error.localizedDescription)"
+            showError = true
         }
     }
 }
