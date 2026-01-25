@@ -8,6 +8,48 @@
 import Foundation
 import SwiftData
 
+enum DeckValidationError: Identifiable {
+    case mainDeckTooLarge(current: Int, limit: Int)
+    case mainDeckTooSmall(current: Int, limit: Int)
+    case sideboardTooLarge(current: Int, limit: Int)
+    case sideboardNotAllowed(current: Int)
+    case tooManyCopies(cardName: String, count: Int, limit: Int)
+
+    var id: String {
+        switch self {
+        case .mainDeckTooLarge: return "mainDeckTooLarge"
+        case .mainDeckTooSmall: return "mainDeckTooSmall"
+        case .sideboardTooLarge: return "sideboardTooLarge"
+        case .sideboardNotAllowed: return "sideboardNotAllowed"
+        case .tooManyCopies(let name, _, _): return "tooManyCopies_\(name)"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .mainDeckTooLarge(let current, let limit):
+            return "Main deck has \(current) cards, maximum is \(limit)"
+        case .mainDeckTooSmall(let current, let limit):
+            return "Main deck has \(current) cards, minimum is \(limit)"
+        case .sideboardTooLarge(let current, let limit):
+            return "Sideboard has \(current) cards, maximum is \(limit)"
+        case .sideboardNotAllowed(let current):
+            return "Sideboard not allowed for this deck type (has \(current) cards)"
+        case .tooManyCopies(let cardName, let count, let limit):
+            return "\(cardName): \(count) copies (maximum \(limit))"
+        }
+    }
+
+    var severity: ValidationSeverity {
+        .error
+    }
+}
+
+enum ValidationSeverity {
+    case error
+    case warning
+}
+
 enum DeckType: String, Codable, CaseIterable {
     case commander = "Commander"
     case standard = "Standard (60)"
@@ -98,39 +140,48 @@ final class DeckList {
         sideboard?.reduce(0) { $0 + $1.quantity } ?? 0
     }
     
-    /// Computed property: whether the deck is valid
-    var isValid: Bool {
+    /// Computed property: validation errors for the deck
+    var validationErrors: [DeckValidationError] {
+        var errors: [DeckValidationError] = []
+
         // Check main deck limit
-        if let limit = deckType.cardLimit, mainDeckCount > limit {
-            return false
+        if let limit = deckType.cardLimit {
+            if mainDeckCount > limit {
+                errors.append(.mainDeckTooLarge(current: mainDeckCount, limit: limit))
+            }
         }
-        
+
         // Check sideboard limit
         if deckType.supportsSideboard {
             if let sideboardLimit = deckType.sideboardLimit(isSealed: isSealed) {
                 if sideboardCount > sideboardLimit {
-                    return false
+                    errors.append(.sideboardTooLarge(current: sideboardCount, limit: sideboardLimit))
                 }
             }
         } else if sideboardCount > 0 {
-            return false
+            errors.append(.sideboardNotAllowed(current: sideboardCount))
         }
-        
+
         // Check copy limits in main deck
         if let mainDeck = mainDeck {
             let copyLimit = deckType.copyLimit
             let cardCounts = Dictionary(grouping: mainDeck, by: { $0.collectionEntry?.card?.name ?? "" })
                 .mapValues { entries in entries.reduce(0) { $0 + $1.quantity } }
-            
+
             // Allow unlimited basic lands
-            for (cardName, count) in cardCounts {
+            for (cardName, count) in cardCounts where !cardName.isEmpty {
                 if !isBasicLand(cardName) && count > copyLimit {
-                    return false
+                    errors.append(.tooManyCopies(cardName: cardName, count: count, limit: copyLimit))
                 }
             }
         }
-        
-        return true
+
+        return errors
+    }
+
+    /// Computed property: whether the deck is valid
+    var isValid: Bool {
+        validationErrors.isEmpty
     }
     
     private func isBasicLand(_ cardName: String) -> Bool {

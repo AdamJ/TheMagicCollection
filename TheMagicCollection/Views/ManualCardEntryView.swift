@@ -11,7 +11,7 @@ import SwiftData
 struct ManualCardEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var searchText = ""
     @State private var searchResults: [Card] = []
     @State private var selectedCard: Card?
@@ -19,7 +19,7 @@ struct ManualCardEntryView: View {
     @State private var notes = ""
     @State private var isSearching = false
     @State private var showManualEntry = false
-    
+
     // Manual entry fields
     @State private var manualCardName = ""
     @State private var manualSetName = ""
@@ -27,6 +27,10 @@ struct ManualCardEntryView: View {
     @State private var manualManaCost = ""
     @State private var manualTypeLine = ""
     @State private var manualRarity = "common"
+
+    // Error handling
+    @State private var errorMessage: String?
+    @State private var showError = false
     
     var body: some View {
         NavigationStack {
@@ -219,13 +223,18 @@ struct ManualCardEntryView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
                         addCard()
                     }
                     .disabled(selectedCard == nil && (showManualEntry ? manualCardName.isEmpty : true))
                 }
+            }
+            .alert("Error Adding Card", isPresented: $showError) {
+                Button("OK") { }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred while adding the card. Please try again.")
             }
         }
     }
@@ -235,12 +244,12 @@ struct ManualCardEntryView: View {
             searchResults = []
             return
         }
-        
+
         isSearching = true
-        
+
         Task {
             let service = ScryfallService(modelContext: modelContext)
-            
+
             do {
                 let results = try service.searchCards(byName: searchText)
                 await MainActor.run {
@@ -251,6 +260,8 @@ struct ManualCardEntryView: View {
                 await MainActor.run {
                     searchResults = []
                     isSearching = false
+                    errorMessage = "Search failed: \(error.localizedDescription)"
+                    showError = true
                 }
             }
         }
@@ -265,11 +276,12 @@ struct ManualCardEntryView: View {
                 // Adding manual entry
                 try addManualCard()
             }
-            
+
             try modelContext.save()
             dismiss()
         } catch {
-            print("Error adding card: \(error)")
+            errorMessage = "Failed to add card: \(error.localizedDescription)"
+            showError = true
         }
     }
     
