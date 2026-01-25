@@ -386,10 +386,6 @@ struct AddCardToDeckView: View {
     }
 }
 
-extension URL: Identifiable {
-    public var id: String { absoluteString }
-}
-
 #Preview {
     NavigationStack {
         DeckDetailView(deck: {

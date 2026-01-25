@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 #if canImport(VisionKit)
 import VisionKit
 #endif
@@ -315,9 +316,10 @@ struct ScannedCardsReviewView: View {
                         continue
                     }
 
+                    let targetScryfallId = card.scryfallId
                     // Check if this card already exists in the collection
                     let predicate = #Predicate<CollectionEntry> { entry in
-                        entry.card?.scryfallId == card.scryfallId
+                        entry.card?.scryfallId == targetScryfallId
                     }
 
                     let descriptor = FetchDescriptor<CollectionEntry>(predicate: predicate)
@@ -502,3 +504,10 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
     CardScannerView()
         .modelContainer(for: [Card.self, CollectionEntry.self], inMemory: true)
 }
+
+// Wrapper to allow using URLs in ForEach/SwiftUI contexts that require Identifiable.
+struct IdentifiableURL: Identifiable, Equatable {
+    let url: URL
+    var id: String { url.absoluteString }
+}
+
